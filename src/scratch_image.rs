@@ -33,6 +33,14 @@ impl Drop for ScratchImage {
     }
 }
 
+// SAFETY: `ScratchImage` uniquely owns both allocations behind its pointers:
+// `m_image` comes from `new Image[]` and `m_memory` from `_aligned_malloc`, and
+// `Release` frees them with `delete[]` and `_aligned_free`. Those are plain CRT
+// heap calls with no thread affinity, and nothing else aliases the memory while
+// the value is owned, so moving it to another thread is sound. It is not `Sync`:
+// that would need a separate argument about concurrent `&self` FFI calls.
+unsafe impl Send for ScratchImage {}
+
 impl ScratchImage {
     pub fn initialize(&mut self, mdata: &TexMetadata, flags: CP_FLAGS) -> Result<()> {
         let hr =
@@ -361,7 +369,9 @@ impl ScratchImage {
 
 #[cfg(test)]
 mod tests {
-    use crate::{ffi, ScratchImage, DXGI_FORMAT, TEX_ALPHA_MODE, TEX_DIMENSION};
+    use crate::{
+        ffi, ScratchImage, DXGI_FORMAT, TEX_ALPHA_MODE, TEX_DIMENSION, TEX_FILTER_FLAGS,
+    };
     use core::mem;
     use std::fs;
 
@@ -373,6 +383,40 @@ mod tests {
         assert_eq!(mem::align_of::<ScratchImage>(), unsafe {
             ffi::DirectXTexFFI_ScratchImage_Alignof()
         });
+    }
+
+    #[test]
+    fn is_send() {
+        fn assert_send<T: Send>() {}
+        assert_send::<ScratchImage>();
+    }
+
+    #[test]
+    fn moves_to_another_thread() {
+        let source = fs::read("data/ferris_wheel.dds").unwrap();
+        let scratch = ScratchImage::load_dds(&source, Default::default(), None, None).unwrap();
+        let pixels = scratch.pixels().to_vec();
+
+        // The worker reads, transforms and finally drops the image, so the
+        // allocation made on this thread is released on the other one. The
+        // non-WIC filter keeps COM out of it: the spawned thread never calls
+        // `CoInitializeEx`, and the WIC path would fail without it.
+        let (width, mips, moved_pixels) = std::thread::spawn(move || {
+            let mipped = scratch
+                .generate_mip_maps(TEX_FILTER_FLAGS::TEX_FILTER_FORCE_NON_WIC, 2)
+                .unwrap();
+            (
+                scratch.metadata().width,
+                mipped.metadata().mip_levels,
+                scratch.pixels().to_vec(),
+            )
+        })
+        .join()
+        .unwrap();
+
+        assert_eq!(width, 720);
+        assert_eq!(mips, 2);
+        assert_eq!(moved_pixels, pixels);
     }
 
     #[test]
