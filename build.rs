@@ -89,6 +89,14 @@ fn build_tex() {
             .object("Ole32.lib");
     }
 
+    // DirectXTex's own CMake (build/CompilerAndLinker.cmake) compiles with
+    // /fp:fast on MSVC, and so does the vcpkg build CAO's parity oracle links.
+    // Without it, the BC1-BC5 encoders' axis fit can resolve near-ties the
+    // other way, flipping a block's endpoints and producing different bytes.
+    if build.get_compiler().is_like_msvc() {
+        build.flag("/fp:fast");
+    }
+
     build.compile("DirectXTex");
 }
 

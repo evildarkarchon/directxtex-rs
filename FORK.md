@@ -24,8 +24,9 @@ top of the base.
 | --- | --- |
 | `external/DirectXTex`: `oct2024` (`9260384a`) → `may2026` (`4feb3e11`) | **Mandatory.** The C++ oracle's vcpkg build pins DirectXTex `may2026`. Parity needs both builds on the same library. |
 | `external/DirectXMath`: `oct2024` (`0d821781`) → `jun2026` (`93e6399d`) | Matches the DirectXMath that the oracle's vcpkg baseline (`127402f1`) builds DirectXTex against. |
+| `build.rs`: DirectXTex's sources compile with `/fp:fast` on MSVC | DirectXTex's own CMake does, so the oracle's vcpkg build does too. Without it the CPU BC1–BC5 encoders can orient a block's endpoints the other way on near-ties, and CAO's BC3 output is not byte-identical to the oracle's (CAO #491). |
 | `unsafe impl Send for ScratchImage` | CAO creates and transforms Textures on its Run Worker thread. The pointers are uniquely owned CRT allocations, and the `SAFETY` comment in `src/scratch_image.rs` explains why moving them is sound. `Sync` is not added. |
-| Version `1.3.0+cao.1` | Build metadata marks the fork in `Cargo.lock`. SemVer matching ignores it, so `^1.1.0` and `^1.3.0` requirements still match. |
+| Version `1.3.0+cao.2` | Build metadata marks the fork in `Cargo.lock`. SemVer matching ignores it, so `^1.1.0` and `^1.3.0` requirements still match. |
 | This file | Records the base and the delta. |
 
 `external/DirectX-Headers` stays at upstream's `v1.614.1` (`48a76297`). On
