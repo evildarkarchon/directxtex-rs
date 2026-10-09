@@ -713,6 +713,26 @@ extern "C"
 		return DirectX::Compress(srcImages, nimages, *metadata, format, compress, threshold, *cImages);
 	}
 
+#if CONFIG_WINDOWS
+	// The DirectCompute BC6H/BC7 encoder. The device is passed through untouched:
+	// DirectXTex itself returns E_INVALIDARG for a null one, and it neither takes
+	// nor releases a reference.
+	HRESULT FFI(Compress3)(
+		ID3D11Device* pDevice,
+		const DirectX::Image* srcImages,
+		size_t nimages,
+		const DirectX::TexMetadata* metadata,
+		DXGI_FORMAT format,
+		DirectX::TEX_COMPRESS_FLAGS compress,
+		float alphaWeight,
+		DirectX::ScratchImage* cImages) noexcept
+	{
+		assert(metadata != nullptr);
+		assert(cImages != nullptr);
+		return DirectX::Compress(pDevice, srcImages, nimages, *metadata, format, compress, alphaWeight, *cImages);
+	}
+#endif
+
 	HRESULT FFI(Decompress1)(
 		const DirectX::Image* cImage,
 		DXGI_FORMAT format,

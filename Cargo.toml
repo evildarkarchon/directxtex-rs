@@ -16,6 +16,7 @@ include = [
   "external/DirectXTex/LICENSE",
   "ffi/include/sal.h",
   "ffi/main.cpp",
+  "shaders/compiled/*.inc",
   "src/*",
   "build.rs",
   "Cargo.toml",
@@ -26,7 +27,7 @@ license = "MIT"
 name = "directxtex"
 readme = "README.md"
 repository = "https://github.com/Ryan-rsm-McKenzie/directxtex-rs"
-version = "1.3.0+cao.2"
+version = "1.3.0+cao.3"
 
 [dependencies]
 bitflags = "2.4.2"

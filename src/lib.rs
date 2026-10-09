@@ -94,6 +94,7 @@
 //! |[`TEX_COMPRESS_FLAGS`](https://github.com/microsoft/DirectXTex/wiki/Compress#related-flags)|[`TEX_COMPRESS_FLAGS`]|
 //! |`TEX_ALPHA_WEIGHT_DEFAULT`|[`TEX_ALPHA_WEIGHT_DEFAULT`]|
 //! |[`Compress`](https://github.com/microsoft/DirectXTex/wiki/Compress)|[`compress`]<br>[`ScratchImage::compress`]<br>[`Image::compress`]|
+//! |[`Compress`](https://github.com/microsoft/DirectXTex/wiki/Compress) (DirectCompute, Windows only)|`compress_gpu`|
 //! |[`Decompress`](https://github.com/microsoft/DirectXTex/wiki/Decompress)|[`decompress`]<br>[`ScratchImage::decompress`]<br>[`Image::decompress`]|
 //! |||
 //! |[`CNMAP_FLAGS`](https://github.com/microsoft/DirectXTex/wiki/ComputeNormalMap#parameters)|[`CNMAP_FLAGS`]|
@@ -150,6 +151,12 @@ pub use self::{
     },
     hresult::HResultError,
     image::{Image, MeanSquaredError},
+};
+
+#[cfg(windows)]
+pub use self::free_functions::compress_gpu;
+
+pub use self::{
     rect::Rect,
     scratch_image::ScratchImage,
     texture_metadata::TexMetadata,

@@ -456,6 +456,17 @@ unsafe extern "C" {
         threshold: f32,
         cImages: MutNonNull<ScratchImage>,
     ) -> HResult;
+    #[cfg(windows)]
+    pub(crate) unsafe fn DirectXTexFFI_Compress3(
+        pDevice: *mut core::ffi::c_void,
+        srcImages: *const Image,
+        nimages: usize,
+        metadata: ConstNonNull<TexMetadata>,
+        format: DXGI_FORMAT,
+        compress: TEX_COMPRESS_FLAGS,
+        alphaWeight: f32,
+        cImages: MutNonNull<ScratchImage>,
+    ) -> HResult;
 
     pub(crate) unsafe fn DirectXTexFFI_Decompress1(
         cImage: ConstNonNull<Image>,

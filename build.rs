@@ -80,12 +80,20 @@ fn build_tex() {
         build
             .files(
                 [
+                    "DirectXTex/BCDirectCompute.cpp",
+                    "DirectXTex/DirectXTexCompressGPU.cpp",
                     "DirectXTex/DirectXTexFlipRotate.cpp",
                     "DirectXTex/DirectXTexWIC.cpp",
                 ]
                 .into_iter()
                 .map(|x| root.join(x)),
             )
+            // The D3D11 compute-shader BC6H/BC7 encoder behind `compress_gpu`.
+            // `BCDirectCompute.cpp` includes its 14 shaders by bare name.
+            // Upstream does not commit them, so they are vendored prebuilt, as
+            // DirectXTex's CMake option `USE_PREBUILT_SHADERS` expects; see
+            // shaders/README.md.
+            .include("shaders/compiled")
             .object("Ole32.lib");
     }
 
@@ -116,4 +124,5 @@ fn main() {
     build_ffi();
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=ffi/main.cpp");
+    println!("cargo:rerun-if-changed=shaders/compiled");
 }

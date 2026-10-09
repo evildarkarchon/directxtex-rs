@@ -200,6 +200,45 @@ pub fn compress(
     hr.success(result)
 }
 
+/// Compresses to BC6H or BC7 with DirectXTex's DirectCompute encoder, the D3D11
+/// overload of [`Compress`](https://github.com/microsoft/DirectXTex/wiki/Compress).
+///
+/// `device` is an `ID3D11Device*`, as from the `windows` crate's
+/// `ID3D11Device::as_raw`. A null device fails with `E_INVALIDARG`, and any other
+/// format than BC6H or BC7 fails too; use [`compress`] for those. `alpha_weight`
+/// is only used by BC7; [`TEX_ALPHA_WEIGHT_DEFAULT`](crate::TEX_ALPHA_WEIGHT_DEFAULT)
+/// is a typical value to use.
+///
+/// # Safety
+/// `device` must be null or a live `ID3D11Device` for the whole call. DirectXTex
+/// neither takes nor releases a reference to it. It encodes through the device's
+/// immediate context, which is not thread-safe, so nothing else may use that
+/// context during the call.
+#[cfg(windows)]
+pub unsafe fn compress_gpu(
+    device: *mut core::ffi::c_void,
+    images: &[Image],
+    metadata: &TexMetadata,
+    format: DXGI_FORMAT,
+    compress: TEX_COMPRESS_FLAGS,
+    alpha_weight: f32,
+) -> Result<ScratchImage> {
+    let mut result = ScratchImage::default();
+    let hr = unsafe {
+        ffi::DirectXTexFFI_Compress3(
+            device,
+            images.as_ffi_ptr(),
+            images.len(),
+            metadata.into(),
+            format,
+            compress,
+            alpha_weight,
+            (&mut result).into(),
+        )
+    };
+    hr.success(result)
+}
+
 pub fn decompress(
     images: &[Image],
     metadata: &TexMetadata,
@@ -238,4 +277,36 @@ pub fn compute_normal_map(
         )
     };
     hr.success(result)
+}
+
+#[cfg(all(test, windows))]
+mod tests {
+    use crate::{
+        compress_gpu, ScratchImage, CP_FLAGS_NONE, DXGI_FORMAT, TEX_ALPHA_WEIGHT_DEFAULT,
+        TEX_COMPRESS_DEFAULT,
+    };
+    use core::ptr;
+
+    /// The GPU encoder is compiled and linked; without a device DirectXTex
+    /// rejects the call before touching D3D11.
+    #[test]
+    fn compress_gpu_rejects_a_null_device() {
+        let mut source = ScratchImage::default();
+        source
+            .initialize_2d(DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM, 8, 8, 1, 1, CP_FLAGS_NONE)
+            .unwrap();
+        // SAFETY: a null device is allowed and only fails the call.
+        let result = unsafe {
+            compress_gpu(
+                ptr::null_mut(),
+                source.images(),
+                source.metadata(),
+                DXGI_FORMAT::DXGI_FORMAT_BC7_UNORM,
+                TEX_COMPRESS_DEFAULT,
+                TEX_ALPHA_WEIGHT_DEFAULT,
+            )
+        };
+        // E_INVALIDARG
+        assert_eq!(result.unwrap_err().into_underlying(), 0x8007_0057);
+    }
 }
