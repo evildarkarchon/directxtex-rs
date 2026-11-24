@@ -85,8 +85,15 @@ fn build_tex() {
                 ]
                 .into_iter()
                 .map(|x| root.join(x)),
-            )
-            .object("Ole32.lib");
+        );
+        // DirectXTexWIC calls COM (CoCreateInstance etc.), so the final binary needs
+        // ole32. Ask Cargo to link the system import library rather than handing
+        // "Ole32.lib" to cc as an object: that only worked while cc passed the bare
+        // name to lib.exe/llvm-lib, which found it on `LIB`. Since cc 1.9.0
+        // (rust-lang/cc-rs#2033) relative objects are resolved against the build
+        // script's working directory, so the archive step fails with
+        // "cannot open input file ...\directxtex-1.3.0\Ole32.lib".
+        println!("cargo:rustc-link-lib=ole32");
     }
 
     build.compile("DirectXTex");
