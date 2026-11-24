@@ -26,8 +26,9 @@ top of the base.
 | `external/DirectXMath`: `oct2024` (`0d821781`) → `jun2026` (`93e6399d`) | Matches the DirectXMath that the oracle's vcpkg baseline (`127402f1`) builds DirectXTex against. |
 | `build.rs`: DirectXTex's sources compile with `/fp:fast` on MSVC | DirectXTex's own CMake does, so the oracle's vcpkg build does too. Without it the CPU BC1–BC5 encoders can orient a block's endpoints the other way on near-ties, and CAO's BC3 output is not byte-identical to the oracle's (CAO #491). |
 | GPU compression: `build.rs` compiles `BCDirectCompute.cpp` and `DirectXTexCompressGPU.cpp` on Windows, with the 14 prebuilt shaders vendored in `shaders/compiled` (`shaders/README.md` says how they were made); `ffi/main.cpp` and `unsafe fn compress_gpu` bind the D3D11 `Compress` overload | CAO encodes BC6H and BC7 on the GPU when it has a D3D11 device, as its C++ oracle does (CAO #495). The CPU encoder is single-threaded in this crate, which builds DirectXTex without OpenMP. |
+| `build.rs`: ole32 links through `cargo:rustc-link-lib=ole32` instead of `.object("Ole32.lib")` | cc 1.9.0 (rust-lang/cc-rs#2033) resolves relative archive objects against the build script's working directory, so archiving the bare `Ole32.lib` name fails with LNK1181 (upstream Ryan-rsm-McKenzie/directxtex-rs#6). Also on the fork's `fix-ole32-link` branch (`d949c4eb`), which is that fix alone on the upstream base. |
 | `unsafe impl Send for ScratchImage` | CAO creates and transforms Textures on its Run Worker thread. The pointers are uniquely owned CRT allocations, and the `SAFETY` comment in `src/scratch_image.rs` explains why moving them is sound. `Sync` is not added. |
-| Version `1.3.0+cao.3` | Build metadata marks the fork in `Cargo.lock`. SemVer matching ignores it, so `^1.1.0` and `^1.3.0` requirements still match. |
+| Version `1.3.0+cao.4` | Build metadata marks the fork in `Cargo.lock`. SemVer matching ignores it, so `^1.1.0` and `^1.3.0` requirements still match. |
 | This file | Records the base and the delta. |
 
 `external/DirectX-Headers` stays at upstream's `v1.614.1` (`48a76297`). On
